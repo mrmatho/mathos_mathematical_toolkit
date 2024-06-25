@@ -1,8 +1,9 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-import io
+from io import BytesIO
+from PIL import Image
 
-st.title("LaTeX Matrix Generator")
+st.title("LaTeX Matrix Generator and Image Exporter")
 
 # Get matrix dimensions from user
 rows = st.number_input("Number of rows", min_value=1, max_value=10, value=2, step=1)
@@ -34,33 +35,23 @@ latex_code = st.text_area("Generated LaTeX code:", value=latex_code, height=200)
 st.write("Rendered Matrix:")
 st.latex(latex_code)
 
-# JavaScript to copy to clipboard
-copy_button = st.button("Copy LaTeX to clipboard")
-if copy_button:
-    st.code(
-        """
-        <script>
-        function copyToClipboard(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('LaTeX code copied to clipboard!');
-        }
-        copyToClipboard(`""" + latex_code.replace("`", "\\`") + """`);
-        </script>
-        """,
-        language='html',
-    )
+# Convert LaTeX to image
+def latex_to_image(latex_code):
+    fig, ax = plt.subplots(figsize=(3, 3))
+    ax.text(0.5, 0.5, f"${latex_code}$", horizontalalignment='center', verticalalignment='center', fontsize=20)
+    ax.axis('off')
+    
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0.1)
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 
-# Convert LaTeX to image and download
-st.write("Download LaTeX as Image")
-img_buffer = io.BytesIO()
-fig, ax = plt.subplots(figsize=(2, 2))
-ax.text(0.5, 0.5, f"${latex_code}$", horizontalalignment='center', verticalalignment='center', fontsize=12)
-ax.axis('off')
-plt.savefig(img_buffer, format='png')
-plt.close(fig)
-st.download_button(label="Download Image", data=img_buffer, file_name="matrix.png", mime="image/png")
+# Generate and download image
+if st.button("Generate and Download Image"):
+    image_buf = latex_to_image(latex_code)
+    st.download_button(label="Download Image", data=image_buf, file_name="matrix.png", mime="image/png")
+    
+    # Display image
+    image = Image.open(image_buf)
+    st.image(image, caption="Generated Matrix Image")
