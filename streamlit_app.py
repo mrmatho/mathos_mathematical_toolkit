@@ -55,3 +55,4 @@ if st.button("Generate and Download Image"):
     # Display image
     image = Image.open(image_buf)
     st.image(image, caption="Generated Matrix Image")
+
